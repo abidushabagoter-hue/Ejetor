@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THZFFX - Painel Privado</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #000; color: #fff; overflow: hidden; height: 100vh; height: 100dvh; display: flex; justify-content: center; align-items: center; }
+        #canvas-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; background: radial-gradient(circle at center, #0a1128 0%, #000000 100%); }
+        
+        .container { position: relative; z-index: 10; width: 90%; max-width: 400px; display: flex; flex-direction: column; align-items: center; max-height: 100vh; overflow-y: auto; padding: 10px 0; }
+        .container::-webkit-scrollbar { display: none; }
+        .container { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .screen { display: none; width: 100%; flex-direction: column; align-items: center; animation: fadeIn 0.3s ease forwards; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .title-glow { font-size: 2.5rem; font-weight: 900; letter-spacing: 2px; text-align: center; color: #fff; text-shadow: 0 0 10px rgba(0, 150, 255, 0.8), 0 0 20px rgba(0, 150, 255, 0.6); margin-bottom: 5px; }
+        .subtitle { font-size: 0.8rem; color: #4da6ff; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 30px; text-align: center; }
+
+        .login-box { width: 100%; border: 2px solid #0066ff; border-radius: 20px; padding: 40px 20px; background: rgba(0, 20, 40, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; box-shadow: 0 0 20px rgba(0, 102, 255, 0.3); }
+        input { width: 100%; padding: 15px; background: rgba(0, 102, 255, 0.1); border: 2px solid #004488; border-radius: 10px; color: #fff; font-size: 1rem; text-align: center; outline: none; margin-bottom: 20px; transition: border 0.3s; }
+        input:focus { border-color: #0066ff; box-shadow: 0 0 10px rgba(0, 102, 255, 0.5); }
+        input::placeholder { color: #557799; }
+
+        button { width: 100%; padding: 15px; background: #0066ff; color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.2s, background 0.2s; box-shadow: 0 0 10px rgba(0, 102, 255, 0.4); text-decoration: none; text-align: center; display: block; }
+        button:active { transform: scale(0.97); background: #004ccc; }
+
+        .inject-btn { width: 100%; background: rgba(10, 20, 40, 0.8); border: 2px solid #004488; border-radius: 15px; padding: 15px; display: flex; align-items: center; margin-bottom: 15px; cursor: pointer; transition: border 0.3s, background 0.3s; }
+        .inject-btn:active { background: rgba(0, 102, 255, 0.2); border-color: #0066ff; }
+        .icon-box { width: 50px; height: 50px; background: #0066ff; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-weight: 900; color: #fff; font-size: 1.2rem; margin-right: 15px; flex-shrink: 0; box-shadow: 0 0 10px rgba(0, 102, 255, 0.5); }
+        .inject-text { display: flex; flex-direction: column; text-align: left; overflow: hidden; }
+        .inject-text strong { font-size: 1rem; color: #fff; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .inject-text span { font-size: 0.8rem; color: #66aaff; }
+
+        .btn-outline { background: transparent; border: 2px solid #004488; color: #66aaff; margin-top: 10px; box-shadow: none; }
+        .btn-outline:active { background: rgba(0, 102, 255, 0.1); }
+
+        .back-btn { align-self: flex-start; background: rgba(10, 20, 40, 0.8); border: 2px solid #004488; padding: 10px 20px; border-radius: 10px; color: #66aaff; margin-bottom: 30px; width: auto; font-size: 0.9rem; box-shadow: none; }
+
+        .upload-box { width: 100%; border: 2px dashed #004488; border-radius: 20px; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; background: rgba(5, 10, 20, 0.8); }
+        .package-name { background: rgba(0, 102, 255, 0.1); border: 1px solid #0066ff; padding: 8px 15px; border-radius: 8px; font-family: monospace; color: #66aaff; margin-bottom: 20px; font-size: 0.9rem; word-break: break-all; }
+        .upload-box h2 { margin-bottom: 10px; font-size: 1.3rem; text-align: center; color: #fff; }
+        .upload-box p { color: #557799; font-size: 0.9rem; margin-bottom: 30px; text-align: center; }
+
+        .file-icon { font-size: 1.5rem; margin-right: 8px; }
+        .file-loaded { margin-top: 15px; color: #00ff88; font-weight: bold; text-align: center; display: none; word-break: break-all; animation: fadeIn 0.3s ease; font-size: 0.9rem;}
+
+        #btn-reinject { display: none; background: #0066ff; color: #fff; margin-top: 15px; border: 2px solid #0066ff; box-shadow: 0 0 15px rgba(0, 102, 255, 0.6); }
+        #btn-reinject:active { background: #004ccc; }
+
+        .info-box { width: 100%; border: 2px solid #0066ff; border-radius: 20px; padding: 30px 20px; background: rgba(0, 20, 40, 0.6); backdrop-filter: blur(10px); display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0, 102, 255, 0.2); }
+        .info-item { margin-bottom: 20px; border-bottom: 1px solid rgba(0, 102, 255, 0.3); padding-bottom: 10px; }
+        .info-item:last-child { border-bottom: none; margin-bottom: 0; }
+        .info-item h3 { color: #4da6ff; font-size: 1rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .info-item p { color: #fff; font-size: 1.1rem; font-weight: bold; }
+        .info-item .helpers { color: #ccc; font-size: 0.95rem; font-weight: normal; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-bg"></canvas>
+
+    <div class="container">
+        
+        <!-- LOGIN -->
+        <div id="screen-login" class="screen active">
+            <div class="login-box">
+                <h1 class="title-glow">THZFFX</h1>
+                <p class="subtitle">Painel Privado</p>
+                <input type="password" id="password" placeholder="Digite a senha">
+                <button onclick="fazerLogin()">ENTRAR</button>
+            </div>
+        </div>
+
+        <!-- PAINEL -->
+        <div id="screen-panel" class="screen">
+            <h1 class="title-glow">THZFFX</h1>
+            <p class="subtitle">Painel de Injeção</p>
+
+            <div class="inject-btn" onclick="goToUpload('com.dts.freefireth', 'FF Normal')">
+                <div class="icon-box">FF</div>
+                <div class="inject-text">
+                    <strong>Injetar no FF Normal</strong>
+                    <span>com.dts.freefireth</span>
+                </div>
+            </div>
+
+            <div class="inject-btn" onclick="goToUpload('com.dts.freefiremax', 'FF Max')">
+                <div class="icon-box">MX</div>
+                <div class="inject-text">
+                    <strong>Injetar no FF Max</strong>
+                    <span>com.dts.freefiremax</span>
+                </div>
+            </div>
+
+            <button class="btn-outline" onclick="goToInfo()" style="margin-top: 15px;">INFO</button>
+            <button class="btn-outline" onclick="logout()">SAIR</button>
+        </div>
+
+        <!-- UPLOAD -->
+        <div id="screen-upload" class="screen">
+            <button class="back-btn" onclick="goToPanel()">← Voltar</button>
+
+            <div class="upload-box">
+                <div class="package-name" id="target-package">com.dts.freefiremax</div>
+                <h2 id="target-title">Injetar em FF Max</h2>
+                <p id="upload-desc">Escolha o arquivo do seu celular</p>
+                
+                <input type="file" id="file-input" style="display: none;" accept="*/*" onchange="processarArquivo(event)">
+                
+                <button id="btn-select" onclick="document.getElementById('file-input').click()" style="display: flex; justify-content: center; align-items: center;">
+                    <span class="file-icon">📁</span> SELECIONAR ARQUIVO
+                </button>
+
+                <div id="loaded-file" class="file-loaded"></div>
+                
+                <!-- O botão de reinjetar volta a ser o botão de abrir -->
+                <button id="btn-reinject" onclick="reinject()">INJETAR NOVAMENTE</button>
+            </div>
+        </div>
+
+        <!-- INFO -->
+        <div id="screen-info" class="screen">
+            <button class="back-btn" onclick="goToPanel()">← Voltar</button>
+            <h1 class="title-glow">INFO</h1>
+            <p class="subtitle">Sobre o Projeto</p>
+            <div class="info-box">
+                <div class="info-item">
+                    <h3>Criador</h3>
+                    <p>Thzffx</p>
+                </div>
+                <div class="info-item">
+                    <h3>Ajudantes</h3>
+                    <p class="helpers">• Hopitkj<br>• Snxis<br>• Otavioffx<br>• InstaplayX</p>
+                </div>
+                <div class="info-item">
+                    <h3>Versão</h3>
+                    <p>v1.0 - Blue Edition</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentFile = null;
+        let currentPackage = "";
+        const SENHA_CORRETA = "thzffx";
+
+        function fazerLogin() {
+            let senha = document.getElementById('password').value.trim();
+            if (senha === SENHA_CORRETA) {
+                document.getElementById('screen-login').classList.remove('active');
+                document.getElementById('screen-panel').classList.add('active');
+            } else {
+                alert("Senha incorreta! Tente novamente.");
+                document.getElementById('password').value = "";
+            }
+        }
+
+        function goToPanel() {
+            document.getElementById('screen-login').classList.remove('active');
+            document.getElementById('screen-upload').classList.remove('active');
+            document.getElementById('screen-info').classList.remove('active');
+            document.getElementById('screen-panel').classList.add('active');
+        }
+
+        function goToUpload(packageName, title) {
+            currentPackage = packageName;
+            document.getElementById('target-package').innerText = packageName;
+            document.getElementById('target-title').innerText = 'Injetar em ' + title;
+            resetUploadScreen();
+            document.getElementById('screen-login').classList.remove('active');
+            document.getElementById('screen-panel').classList.remove('active');
+            document.getElementById('screen-info').classList.remove('active');
+            document.getElementById('screen-upload').classList.add('active');
+        }
+
+        function goToInfo() {
+            document.getElementById('screen-login').classList.remove('active');
+            document.getElementById('screen-panel').classList.remove('active');
+            document.getElementById('screen-upload').classList.remove('active');
+            document.getElementById('screen-info').classList.add('active');
+        }
+
+        function logout() {
+            document.getElementById('password').value = "";
+            currentFile = null;
+            currentPackage = "";
+            goToPanel(); 
+            document.getElementById('screen-panel').classList.remove('active');
+            document.getElementById('screen-login').classList.add('active');
+        }
+
+        function resetUploadScreen() {
+            currentFile = null;
+            document.getElementById('btn-select').style.display = 'flex';
+            document.getElementById('upload-desc').innerText = 'Escolha o arquivo do seu celular';
+            document.getElementById('loaded-file').style.display = 'none';
+            document.getElementById('btn-reinject').style.display = 'none';
+            document.getElementById('file-input').value = "";
+        }
+
+        // FUNÇÃO QUE PROCESSA O ARQUIVO E TENTA ABRIR O JOGO SOZINHO
+        function processarArquivo(event) {
+            let file = event.target.files[0];
+            if (file) {
+                currentFile = file;
+
+                document.getElementById('btn-select').style.display = 'none';
+                document.getElementById('upload-desc').innerText = 'Arquivo selecionado com sucesso!';
+                
+                let displayFile = document.getElementById('loaded-file');
+                displayFile.innerText = `✅ ${file.name}\nInjetando...`;
+                displayFile.style.display = 'block';
+                
+                document.getElementById('btn-reinject').style.display = 'block';
+
+                // CHAMA A FUNÇÃO QUE TENTA ABRIR O JOGO AUTOMATICAMENTE
+                abrirJogoAutomatico();
+            }
+        }
+
+        function abrirJogoAutomatico() {
+            // Pausa de 1.5s para o usuário ver o arquivo, e então tenta abrir o jogo
+            setTimeout(() => {
+                let deepLink = (currentPackage === "com.dts.freefireth") ? "freefire://" : "freefiremax://";
+                
+                // Tenta redirecionar o navegador para o aplicativo (muitos navegadores bloqueiam isso)
+                window.location.href = deepLink;
+
+                // Se o navegador bloquear, o usuário ainda pode clicar no botão "INJETAR NOVAMENTE"
+                setTimeout(() => {
+                    document.getElementById('loaded-file').innerText = `✅ ${file.name}\nSe o jogo não abriu, clique em "INJETAR NOVAMENTE" abaixo.`;
+                }, 2000);
+
+            }, 1500); // 1500 ms = 1.5 segundos
+        }
+
+        function reinject() {
+            if(currentFile) {
+                let displayFile = document.getElementById('loaded-file');
+                displayFile.innerText = `✅ ${currentFile.name}\nTentando abrir o jogo...`;
+                
+                let btn = document.getElementById('btn-reinject');
+                btn.innerText = "INJETANDO...";
+                btn.style.opacity = "0.7";
+
+                setTimeout(() => {
+                    btn.innerText = "INJETAR NOVAMENTE";
+                    btn.style.opacity = "1";
+                    
+                    // Tenta abrir de novo
+                    let deepLink = (currentPackage === "com.dts.freefireth") ? "freefire://" : "freefiremax://";
+                    window.location.href = deepLink;
+
+                }, 1000);
+            }
+        }
+
+        // FUNDO ANIMADO
+        const canvas = document.getElementById('canvas-bg');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = Math.random() * 1 - 0.5;
+                this.speedY = Math.random() * 1 - 0.5;
+                this.opacity = Math.random() * 0.5 + 0.1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0;
+                if (this.y < 0) this.y = canvas.height;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(0, 150, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#0066ff';
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            const particleCount = Math.floor((canvas.width * canvas.height) / 15000); 
+            for (let i = 0; i < particleCount; i++) { particles.push(new Particle()); }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, canvas.width/2, canvas.height/2, canvas.width);
+            gradient.addColorStop(0, "#0a1128");
+            gradient.addColorStop(1, "#000000");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(particle => { particle.update(); particle.draw(); });
+            ctx.shadowBlur = 0;
+            requestAnimationFrame(animate);
+        }
+
+        initParticles();
+        animate();
+    </script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(() => console.log("Service Worker registrado com sucesso!"))
+        .catch((error) => console.error("Erro ao registrar Service Worker:", error));
+    }
+  </script>
+</body>
+</html>
